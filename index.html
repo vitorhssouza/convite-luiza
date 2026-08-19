@@ -4,6 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
 <link rel="preload" href="assets/abertura_pergaminho.mp4" as="video" type="video/mp4">
+<link rel="preload" href="assets/musica_convite.mp3" as="audio" type="audio/mpeg">
 <title>Convocação Real</title>
 
 <style>
@@ -533,7 +534,9 @@
 
   <div class="brand-footer">By Luiza</div>
 
-  <div id="yt-player-container" style="position:fixed; bottom:0; left:0; width:2px; height:2px; opacity:0.01; overflow:hidden; pointer-events:none;"></div>
+  <audio id="bg-music" preload="auto" loop playsinline>
+    <source src="assets/musica_convite.mp3" type="audio/mpeg">
+  </audio>
 </div>
 
 <script>
@@ -593,6 +596,8 @@
   let opened = false;
   let finalPrepared = false;
   let fallbackTimer = null;
+  let videoStarted = false;
+  let videoStartTimer = null;
 
   // How long before the video's natural end to start crossfading it out.
   // Matches #video-abertura's own opacity transition duration so the CSS
@@ -629,10 +634,15 @@
   function openScrollInstant() {
     opened = true;
     finalPrepared = true;
+    videoStarted = true; // ignore a late 'playing' event if it still arrives
 
     if (fallbackTimer) {
       clearTimeout(fallbackTimer);
       fallbackTimer = null;
+    }
+    if (videoStartTimer) {
+      clearTimeout(videoStartTimer);
+      videoStartTimer = null;
     }
 
     scrollClosed.classList.add('swing-stopped', 'faded');
@@ -650,14 +660,15 @@
     if (opened) return;
     opened = true;
 
-    scrollClosed.classList.add('swing-stopped', 'faded');
     ctaText.classList.add('hidden');
     skipBtn.classList.add('hidden');
 
-    videoAbertura.hidden = false;
-    videoAbertura.classList.add('active');
-    try { videoAbertura.currentTime = 0; } catch (err) { /* not seekable yet */ }
-
+    // Ask the video to play right away, from the same synchronous click
+    // handler, so the user gesture carries through to audio playback.
+    // The closed scroll stays put until we actually get a frame back
+    // (see the 'playing' listener below) — swapping it out immediately
+    // used to leave a blank gap whenever the file hadn't buffered enough
+    // yet, which is what showed up as "the video doesn't load".
     const playPromise = videoAbertura.play();
     if (playPromise && typeof playPromise.catch === 'function') {
       playPromise.catch(function (err) {
@@ -666,10 +677,36 @@
       });
     }
 
-    // Safety net: guarantees the invite opens even if playback stalls and
-    // neither 'timeupdate' nor 'ended' ever fire.
-    fallbackTimer = setTimeout(prepareFinalState, 8000);
+    // If no frame has actually rendered within a few seconds — slow
+    // connection, stalled buffering, etc. — stop waiting and show the
+    // finished invite instead of leaving the user looking at nothing.
+    videoStartTimer = setTimeout(function () {
+      if (!videoStarted && !finalPrepared) {
+        console.warn('[abertura] video did not start in time, falling back to instant open');
+        openScrollInstant();
+      }
+    }, 4000);
   }
+
+  videoAbertura.addEventListener('playing', function () {
+    if (videoStarted || finalPrepared) return;
+    videoStarted = true;
+
+    if (videoStartTimer) {
+      clearTimeout(videoStartTimer);
+      videoStartTimer = null;
+    }
+
+    // Only now, with an actual frame on screen, do we crossfade the
+    // closed scroll into the video.
+    scrollClosed.classList.add('swing-stopped', 'faded');
+    videoAbertura.hidden = false;
+    videoAbertura.classList.add('active');
+
+    // Safety net: guarantees the invite opens even if playback stalls
+    // partway through and neither 'timeupdate' nor 'ended' ever fire.
+    fallbackTimer = setTimeout(prepareFinalState, 8000);
+  });
 
   videoAbertura.addEventListener('timeupdate', function () {
     if (finalPrepared) return;
@@ -685,6 +722,10 @@
   videoAbertura.addEventListener('error', function () {
     if (!opened || finalPrepared) return;
     console.warn('[abertura] video error, falling back to instant open');
+    if (videoStartTimer) {
+      clearTimeout(videoStartTimer);
+      videoStartTimer = null;
+    }
     openScrollInstant();
   });
 
@@ -701,112 +742,47 @@
     openScrollInstant();
   }
 
-  // ---- Background music: "Deixa Brilhar" (The Glow) via YouTube ----
+  // ---- Background music ----
   //
-  // Why muted-first: a click on the parent page does NOT reliably count as
-  // a "user gesture" inside the cross-origin YouTube iframe (the command
-  // only reaches it via postMessage), so browsers can silently refuse to
-  // start audible playback from a click handler alone. Muted autoplay is
-  // always allowed, though — so the player starts muted as soon as it's
-  // ready, and the click the user already makes to open the invitation
-  // just unmutes an already-playing video, which browsers reliably allow.
-  const YT_VIDEO_ID = 'jNnhNtwes0I';
+  // Self-hosted file, same origin as the page itself — no external API,
+  // no cross-origin iframe, no postMessage round-trip. play() is called
+  // directly from a real user gesture (the visitor's first click/key/tap
+  // anywhere on the page), which every major browser allows for audible
+  // playback, so there's no need for the old "start muted, unmute later"
+  // workaround that a cross-origin YouTube iframe required.
   const musicToggle = document.getElementById('music-toggle');
+  const bgMusic = document.getElementById('bg-music');
+  bgMusic.volume = 0.7;
 
-  let ytPlayer = null;
-  let ytReady = false;
-  let soundEnabled = false;
-  let soundRequested = false;
+  let musicStarted = false;
 
-  window.onYouTubeIframeAPIReady = function () {
-    ytPlayer = new YT.Player('yt-player-container', {
-      videoId: YT_VIDEO_ID,
-      playerVars: {
-        autoplay: 1,
-        mute: 1,
-        controls: 0,
-        disablekb: 1,
-        fs: 0,
-        modestbranding: 1,
-        loop: 1,
-        playlist: YT_VIDEO_ID,
-        playsinline: 1
-      },
-      events: {
-        onReady: function () {
-          ytReady = true;
-          ytPlayer.setVolume(70);
-          ytPlayer.mute();
-          ytPlayer.playVideo();
-          console.log('[music] player ready, playing muted');
-          if (soundRequested) enableSound();
-        },
-        onError: function (e) {
-          console.error('[music] YouTube player error, code:', e.data);
-        },
-        onStateChange: function (e) {
-          console.log('[music] state changed to', e.data);
-          // The app never intentionally pauses this player (the toggle only
-          // mutes/unmutes), so if it stops for any reason — the browser
-          // pausing muted background media, a hiccup switching bitrate when
-          // unmuting, etc. — just resume it.
-          if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.UNSTARTED) {
-            ytPlayer.playVideo();
-          }
-        }
-      }
-    });
-  };
-
-  const ytApiScript = document.createElement('script');
-  ytApiScript.src = 'https://www.youtube.com/iframe_api';
-  ytApiScript.onerror = function () {
-    console.error('[music] failed to load the YouTube iframe API script (network blocked?)');
-  };
-  document.head.appendChild(ytApiScript);
-
-  setTimeout(function () {
-    if (!ytReady) {
-      console.warn('[music] YouTube API still not ready after 6s — likely blocked by the network, an ad blocker, or the browser.');
+  function startMusic() {
+    if (musicStarted) return;
+    musicStarted = true;
+    const playPromise = bgMusic.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(function (err) {
+        console.warn('[music] play() failed, will retry on the next interaction', err);
+        musicStarted = false;
+      });
     }
-  }, 6000);
-
-  function enableSound() {
-    if (soundEnabled) return;
-    if (!ytReady || !ytPlayer) {
-      soundRequested = true;
-      return;
-    }
-    soundEnabled = true;
-    ytPlayer.unMute();
-    ytPlayer.setVolume(70);
-    if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
-      ytPlayer.playVideo();
-    }
-    musicToggle.classList.remove('muted');
-    console.log('[music] sound enabled');
   }
 
-  function firstInteractionEnableSound() {
-    enableSound();
-  }
-  document.addEventListener('click', firstInteractionEnableSound, { once: true, capture: true });
-  document.addEventListener('keydown', firstInteractionEnableSound, { once: true, capture: true });
-  document.addEventListener('touchstart', firstInteractionEnableSound, { once: true, capture: true });
+  bgMusic.addEventListener('error', function () {
+    console.warn('[music] failed to load the audio file');
+  });
+
+  document.addEventListener('click', startMusic, { once: true, capture: true });
+  document.addEventListener('keydown', startMusic, { once: true, capture: true });
+  document.addEventListener('touchstart', startMusic, { once: true, capture: true });
 
   musicToggle.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (!ytPlayer) return;
-    if (!soundEnabled) {
-      enableSound();
+    if (!musicStarted) {
+      startMusic();
       return;
     }
-    const nowMuted = !ytPlayer.isMuted();
-    if (nowMuted) {
-      ytPlayer.mute();
-    } else {
-      ytPlayer.unMute();
-    }
-    musicToggle.classList.toggle('muted', nowMuted);
+    bgMusic.muted = !bgMusic.muted;
+    musicToggle.classList.toggle('muted', bgMusic.muted);
   });
 </script>
