@@ -92,15 +92,54 @@
 
   #scroll-open {
     z-index: 2;
-    opacity: 0;
+    opacity: 1;
     clip-path: inset(50% 0% 50% 0%);
     transform-origin: center;
-    transition: opacity 0.8s ease, clip-path 0.9s cubic-bezier(.4, 0, .2, 1);
+    transition: clip-path 1.5s cubic-bezier(.65, 0, .35, 1) 0.35s;
   }
 
   #scroll-open.revealed {
-    opacity: 1;
     clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .roll-shadow {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 7%;
+    z-index: 4;
+    background: linear-gradient(to bottom, rgba(40, 18, 8, 0) 0%, rgba(40, 18, 8, 0.4) 50%, rgba(40, 18, 8, 0) 100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .roll-shadow-top {
+    top: 50%;
+    transform: translateY(-100%);
+  }
+
+  .roll-shadow-bottom {
+    top: 50%;
+  }
+
+  .roll-shadow-top.sweeping {
+    animation: sweepTop 1.5s cubic-bezier(.65, 0, .35, 1) 0.35s forwards;
+  }
+
+  .roll-shadow-bottom.sweeping {
+    animation: sweepBottom 1.5s cubic-bezier(.65, 0, .35, 1) 0.35s forwards;
+  }
+
+  @keyframes sweepTop {
+    0%   { top: 50%; opacity: 0; }
+    10%  { opacity: 0.9; }
+    100% { top: 0%; opacity: 0; }
+  }
+
+  @keyframes sweepBottom {
+    0%   { top: 50%; opacity: 0; }
+    10%  { opacity: 0.9; }
+    100% { top: 100%; opacity: 0; }
   }
 
   @keyframes pendulum {
@@ -299,6 +338,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     #scroll-closed,
+    .roll-shadow,
     .cta-text,
     .skip-btn {
       animation: none !important;
@@ -316,6 +356,8 @@
     <div class="scroll-stage" id="scroll-stage" role="button" tabindex="0" aria-label="Abrir convite">
       <img id="scroll-closed" src="assets/pergaminho-fechad.png" alt="Pergaminho real fechado">
       <img id="scroll-open" src="assets/pergaminho-aberto.png" alt="Pergaminho real aberto">
+      <div class="roll-shadow roll-shadow-top" id="roll-shadow-top"></div>
+      <div class="roll-shadow roll-shadow-bottom" id="roll-shadow-bottom"></div>
 
       <div class="invite-content" id="invite-content">
         <div>
@@ -396,6 +438,8 @@
   const scrollStage = document.getElementById('scroll-stage');
   const scrollClosed = document.getElementById('scroll-closed');
   const scrollOpen = document.getElementById('scroll-open');
+  const rollShadowTop = document.getElementById('roll-shadow-top');
+  const rollShadowBottom = document.getElementById('roll-shadow-bottom');
   const ctaText = document.getElementById('cta-text');
   const skipBtn = document.getElementById('skip-btn');
   const inviteContent = document.getElementById('invite-content');
@@ -410,15 +454,22 @@
 
     scrollClosed.classList.add('swing-stopped');
     scrollClosed.classList.add('faded');
-    scrollOpen.classList.add('revealed');
 
     ctaText.classList.add('hidden');
     skipBtn.classList.add('hidden');
 
-    const delay = prefersReducedMotion ? 0 : 500;
-    setTimeout(() => {
-      inviteContent.classList.add('shown');
-    }, delay);
+    // Unroll: the closed scroll dissolves while the open parchment expands
+    // outward from its rolled-up center, with a shadow sweeping along each
+    // unrolling edge. Text only fades in once the unroll has fully settled.
+    scrollOpen.classList.add('revealed');
+    rollShadowTop.classList.add('sweeping');
+    rollShadowBottom.classList.add('sweeping');
+
+    scrollOpen.addEventListener('transitionend', function onUnrollDone(e) {
+      if (e.propertyName !== 'clip-path') return;
+      scrollOpen.removeEventListener('transitionend', onUnrollDone);
+      setTimeout(() => inviteContent.classList.add('shown'), 300);
+    });
   }
 
   function openScrollInstant() {
