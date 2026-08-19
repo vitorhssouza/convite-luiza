@@ -53,12 +53,12 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding-top: 1.2vh;
+    padding-top: 0.8vh;
   }
 
   .scroll-stage {
     position: relative;
-    width: min(97vw, 88vh * 0.5628);
+    width: min(98vw, 90vh * 0.5628);
     aspect-ratio: 941 / 1672;
     flex-shrink: 0;
     cursor: pointer;
@@ -174,15 +174,16 @@
 
   .invite-content {
     position: absolute;
-    left: 20%;
-    right: 20%;
-    top: 37%;
-    bottom: 24%;
+    left: 28%;
+    right: 28%;
+    top: 33%;
+    bottom: 26%;
     z-index: 4;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 0.9vh;
     text-align: center;
     opacity: 0;
     transform: translateY(6px);
@@ -198,39 +199,39 @@
   .inv-name {
     font-family: 'Great Vibes', cursive;
     color: var(--ink-rose);
-    font-size: clamp(21px, 3.25vh, 31px);
+    font-size: clamp(21px, 3.3vh, 31.5px);
     line-height: 1;
   }
 
   .inv-age {
-    margin-top: 0.2em;
+    margin-top: 0.1em;
     color: var(--ink-brown);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.13em;
-    font-size: clamp(9px, 1.3vh, 12.5px);
+    font-size: clamp(9px, 1.32vh, 12.5px);
   }
 
   .inv-eyebrow {
     font-family: 'Great Vibes', cursive;
     color: var(--ink-rose);
-    font-size: clamp(15.5px, 2.35vh, 22.5px);
+    font-size: clamp(16px, 2.4vh, 23px);
     line-height: 1;
   }
 
   .inv-message {
     color: var(--ink-brown);
     font-weight: 600;
-    font-size: clamp(8.5px, 1.1vh, 12px);
-    line-height: 1.22;
-    max-width: 42ch;
+    font-size: clamp(8.5px, 1.12vh, 12px);
+    line-height: 1.2;
+    max-width: 100%;
   }
 
   .inv-datetime {
     display: flex;
     width: 100%;
     justify-content: space-between;
-    padding: 0 12%;
+    padding: 0 1%;
   }
 
   .inv-datetime .col {
@@ -251,7 +252,7 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-size: clamp(7.5px, 1vh, 10.5px);
-    margin-top: 0.08em;
+    margin-top: 0.05em;
   }
 
   .inv-venue {
@@ -260,8 +261,8 @@
     text-transform: uppercase;
     letter-spacing: 0.02em;
     font-size: clamp(7.5px, 1.05vh, 10.5px);
-    line-height: 1.3;
-    max-width: 32ch;
+    line-height: 1.25;
+    max-width: 100%;
   }
 
   .inv-whatsapp {
@@ -269,14 +270,14 @@
     font-weight: 600;
     letter-spacing: 0.01em;
     font-size: clamp(7.5px, 1vh, 10.5px);
-    line-height: 1.2;
-    max-width: 34ch;
+    line-height: 1.15;
+    max-width: 100%;
   }
 
   .inv-closing {
     font-family: 'Great Vibes', cursive;
     color: var(--ink-rose);
-    font-size: clamp(14px, 2vh, 18px);
+    font-size: clamp(14px, 1.95vh, 18px);
     line-height: 1;
   }
 
