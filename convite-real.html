@@ -1,0 +1,444 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+<title>Convocação Real</title>
+
+<style>
+  :root {
+    --ink-rose: #8c2f4a;
+    --ink-brown: #5a3a1e;
+    --cream: #fbf1e2;
+    --skip-bg: rgba(255, 210, 225, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #2a0f14;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  .app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  #bg-img {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    z-index: 0;
+    filter: blur(11px) brightness(0.82) saturate(1.08);
+    transform: scale(1.08);
+  }
+
+  .stage-column {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 4.5vh;
+  }
+
+  .scroll-stage {
+    position: relative;
+    width: min(84vw, 68vh * 0.5628);
+    aspect-ratio: 941 / 1672;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .scroll-stage img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  #scroll-closed {
+    z-index: 3;
+    transform-origin: top center;
+    animation: pendulum 4.5s ease-in-out infinite;
+    transition: opacity 0.6s ease;
+  }
+
+  #scroll-closed.swing-stopped {
+    animation-play-state: paused;
+  }
+
+  #scroll-closed.faded {
+    opacity: 0;
+  }
+
+  #scroll-open {
+    z-index: 2;
+    opacity: 0;
+    clip-path: inset(50% 0% 50% 0%);
+    transform-origin: center;
+    transition: opacity 0.8s ease, clip-path 0.9s cubic-bezier(.4, 0, .2, 1);
+  }
+
+  #scroll-open.revealed {
+    opacity: 1;
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  @keyframes pendulum {
+    0%   { transform: rotate(-1.5deg); }
+    50%  { transform: rotate(1.5deg); }
+    100% { transform: rotate(-1.5deg); }
+  }
+
+  .cta-text {
+    margin-top: 1.6vh;
+    width: 82vw;
+    max-width: 420px;
+    color: #fff8ee;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(13px, 3.6vw, 17px);
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55), 0 0 18px rgba(0, 0, 0, 0.35);
+    animation: pulse 2.1s ease-in-out infinite;
+    transition: opacity 0.4s ease;
+  }
+
+  .cta-text.hidden {
+    opacity: 0 !important;
+    animation: none;
+    pointer-events: none;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.65; transform: scale(1); }
+    50%      { opacity: 1;    transform: scale(1.03); }
+  }
+
+  .skip-btn {
+    position: fixed;
+    right: 4vw;
+    bottom: 3.2vh;
+    z-index: 10;
+    padding: 0.55em 1.2em;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: var(--skip-bg);
+    backdrop-filter: blur(3px);
+    color: #fff;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(12px, 3.2vw, 15px);
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    opacity: 0;
+    animation: skipFadeIn 0.6s ease forwards;
+    animation-delay: 2.4s;
+    transition: opacity 0.4s ease, transform 0.15s ease;
+  }
+
+  .skip-btn:active {
+    transform: scale(0.96);
+  }
+
+  .skip-btn.hidden {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+
+  @keyframes skipFadeIn {
+    to { opacity: 1; }
+  }
+
+  /* ---- Invite text overlaid on the open scroll ---- */
+
+  .invite-content {
+    position: absolute;
+    left: 20%;
+    right: 20%;
+    top: 37%;
+    bottom: 24%;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+  }
+
+  .invite-content.shown {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .inv-name {
+    font-family: 'Great Vibes', cursive;
+    color: var(--ink-rose);
+    font-size: clamp(15px, 2.3vh, 22px);
+    line-height: 1;
+  }
+
+  .inv-age {
+    margin-top: 0.2em;
+    color: var(--ink-brown);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    font-size: clamp(6.5px, 0.95vh, 9px);
+  }
+
+  .inv-eyebrow {
+    font-family: 'Great Vibes', cursive;
+    color: var(--ink-rose);
+    font-size: clamp(11px, 1.7vh, 16px);
+    line-height: 1;
+  }
+
+  .inv-message {
+    color: var(--ink-brown);
+    font-weight: 600;
+    font-size: clamp(6px, 0.78vh, 8.5px);
+    line-height: 1.15;
+    max-width: 48ch;
+  }
+
+  .inv-datetime {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding: 0 12%;
+  }
+
+  .inv-datetime .col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--ink-brown);
+  }
+
+  .inv-datetime .big {
+    font-weight: 700;
+    font-size: clamp(8px, 1.15vh, 11px);
+    letter-spacing: 0.05em;
+  }
+
+  .inv-datetime .small {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: clamp(5.5px, 0.72vh, 7.5px);
+    margin-top: 0.08em;
+  }
+
+  .inv-venue {
+    color: var(--ink-brown);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: clamp(5.5px, 0.75vh, 7.5px);
+    line-height: 1.25;
+    max-width: 32ch;
+  }
+
+  .inv-whatsapp {
+    color: var(--ink-brown);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    font-size: clamp(5.5px, 0.72vh, 7.5px);
+    line-height: 1.15;
+    max-width: 34ch;
+  }
+
+  .inv-closing {
+    font-family: 'Great Vibes', cursive;
+    color: var(--ink-rose);
+    font-size: clamp(10px, 1.45vh, 13px);
+    line-height: 1;
+  }
+
+  .brand-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0.9vh;
+    z-index: 10;
+    text-align: center;
+    color: rgba(255, 248, 238, 0.75);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(9px, 2.4vw, 11px);
+    letter-spacing: 0.08em;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #scroll-closed,
+    .cta-text,
+    .skip-btn {
+      animation: none !important;
+    }
+    * {
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+
+<div class="app">
+  <img id="bg-img" src="assets/salao-fundo.png" alt="">
+
+  <div class="stage-column">
+    <div class="scroll-stage" id="scroll-stage" role="button" tabindex="0" aria-label="Abrir convite">
+      <img id="scroll-closed" src="assets/pergaminho-fechad.png" alt="Pergaminho real fechado">
+      <img id="scroll-open" src="assets/pergaminho-aberto.png" alt="Pergaminho real aberto">
+
+      <div class="invite-content" id="invite-content">
+        <div>
+          <div class="inv-name" id="inv-name"></div>
+          <div class="inv-age" id="inv-age"></div>
+        </div>
+
+        <div class="inv-eyebrow" id="inv-eyebrow"></div>
+
+        <div class="inv-message" id="inv-message"></div>
+
+        <div class="inv-datetime">
+          <div class="col">
+            <span class="big" id="inv-day"></span>
+            <span class="small" id="inv-month"></span>
+          </div>
+          <div class="col">
+            <span class="big" id="inv-time"></span>
+            <span class="small" id="inv-weekday"></span>
+          </div>
+        </div>
+
+        <div class="inv-venue" id="inv-venue"></div>
+
+        <div class="inv-whatsapp" id="inv-whatsapp"></div>
+
+        <div class="inv-closing" id="inv-closing"></div>
+      </div>
+    </div>
+
+    <div class="cta-text" id="cta-text">Clique para assistir uma convocação real</div>
+  </div>
+
+  <button class="skip-btn" id="skip-btn" type="button">Pular abertura</button>
+
+  <div class="brand-footer">By Vick Convites</div>
+</div>
+
+<script>
+  // ---- Edit invitation data here ----
+  const CONFIG = {
+    name: 'Luiza',
+    age: '1 ano',
+    eyebrow: 'Convocação Real',
+    message: 'O reino encantado está em festa. A sua alteza real, a Princesa Luiza convoca todos os príncipes e princesas dos reinos vizinhos para a comemoração do seu 1º ano de reinado!',
+    day: '13',
+    month: 'Setembro',
+    time: 'Às 16:00h',
+    weekday: 'Domingo',
+    venueName: 'W. A Espaço Lazer',
+    venueAddress: 'Rua José Esteves, 266, Bairro Ibraim',
+    city: 'Cataguases, MG',
+    whatsapp: '32 99925-6417',
+    closing: 'Esperamos você!'
+  };
+
+  function fillText(id, text) {
+    document.getElementById(id).textContent = text;
+  }
+
+  fillText('inv-name', CONFIG.name);
+  fillText('inv-age', CONFIG.age);
+  fillText('inv-eyebrow', CONFIG.eyebrow);
+  fillText('inv-message', CONFIG.message);
+  fillText('inv-day', CONFIG.day);
+  fillText('inv-month', CONFIG.month);
+  fillText('inv-time', CONFIG.time);
+  fillText('inv-weekday', CONFIG.weekday);
+  fillText('inv-venue', CONFIG.venueName + ' - ' + CONFIG.venueAddress + '\n' + CONFIG.city);
+  fillText('inv-whatsapp', 'Por gentileza, confirme a sua presença no WhatsApp: ' + CONFIG.whatsapp);
+  fillText('inv-closing', CONFIG.closing);
+
+  // Preserve the line break inside the venue block
+  document.getElementById('inv-venue').innerHTML =
+    CONFIG.venueName + ' - ' + CONFIG.venueAddress + '<br>' + CONFIG.city;
+
+  // ---- Interaction ----
+  const scrollStage = document.getElementById('scroll-stage');
+  const scrollClosed = document.getElementById('scroll-closed');
+  const scrollOpen = document.getElementById('scroll-open');
+  const ctaText = document.getElementById('cta-text');
+  const skipBtn = document.getElementById('skip-btn');
+  const inviteContent = document.getElementById('invite-content');
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let opened = false;
+
+  function openScroll() {
+    if (opened) return;
+    opened = true;
+
+    scrollClosed.classList.add('swing-stopped');
+    scrollClosed.classList.add('faded');
+    scrollOpen.classList.add('revealed');
+
+    ctaText.classList.add('hidden');
+    skipBtn.classList.add('hidden');
+
+    const delay = prefersReducedMotion ? 0 : 500;
+    setTimeout(() => {
+      inviteContent.classList.add('shown');
+    }, delay);
+  }
+
+  function openScrollInstant() {
+    opened = true;
+    scrollClosed.classList.add('swing-stopped', 'faded');
+    scrollOpen.classList.add('revealed');
+    ctaText.classList.add('hidden');
+    skipBtn.classList.add('hidden');
+    inviteContent.classList.add('shown');
+  }
+
+  scrollStage.addEventListener('click', openScroll);
+  scrollStage.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openScroll();
+    }
+  });
+  skipBtn.addEventListener('click', openScroll);
+
+  if (prefersReducedMotion) {
+    openScrollInstant();
+  }
+</script>
