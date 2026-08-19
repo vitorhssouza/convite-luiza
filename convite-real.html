@@ -62,6 +62,8 @@
     aspect-ratio: 941 / 1672;
     flex-shrink: 0;
     cursor: pointer;
+    container-type: inline-size;
+    container-name: scroll;
   }
 
   .scroll-stage img {
@@ -88,6 +90,10 @@
 
   #scroll-closed.faded {
     opacity: 0;
+  }
+
+  .scroll-stage:hover #scroll-closed:not(.faded) {
+    filter: brightness(1.06);
   }
 
   #scroll-open {
@@ -196,6 +202,11 @@
     transition: opacity 0.4s ease, transform 0.15s ease;
   }
 
+  .skip-btn:hover {
+    background: rgba(255, 210, 225, 0.5);
+    transform: scale(1.03);
+  }
+
   .skip-btn:active {
     transform: scale(0.96);
   }
@@ -222,7 +233,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.9vh;
+    gap: 2cqw;
     text-align: center;
     opacity: 0;
     transform: translateY(6px);
@@ -238,7 +249,7 @@
   .inv-name {
     font-family: 'Great Vibes', cursive;
     color: var(--ink-rose);
-    font-size: clamp(21px, 3.3vh, 31.5px);
+    font-size: clamp(21px, 7.3cqw, 31.5px);
     line-height: 1;
   }
 
@@ -248,20 +259,20 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.13em;
-    font-size: clamp(9px, 1.32vh, 12.5px);
+    font-size: clamp(9px, 2.91cqw, 12.5px);
   }
 
   .inv-eyebrow {
     font-family: 'Great Vibes', cursive;
     color: var(--ink-rose);
-    font-size: clamp(16px, 2.4vh, 23px);
+    font-size: clamp(16px, 5.3cqw, 23px);
     line-height: 1;
   }
 
   .inv-message {
     color: var(--ink-brown);
     font-weight: 600;
-    font-size: clamp(8.5px, 1.12vh, 12px);
+    font-size: clamp(8.5px, 2.47cqw, 12px);
     line-height: 1.2;
     max-width: 100%;
   }
@@ -282,7 +293,7 @@
 
   .inv-datetime .big {
     font-weight: 700;
-    font-size: clamp(11px, 1.6vh, 16px);
+    font-size: clamp(11px, 3.53cqw, 16px);
     letter-spacing: 0.05em;
   }
 
@@ -290,7 +301,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    font-size: clamp(7.5px, 1vh, 10.5px);
+    font-size: clamp(7.5px, 2.21cqw, 10.5px);
     margin-top: 0.05em;
   }
 
@@ -299,7 +310,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    font-size: clamp(7.5px, 1.05vh, 10.5px);
+    font-size: clamp(7.5px, 2.32cqw, 10.5px);
     line-height: 1.25;
     max-width: 100%;
   }
@@ -308,7 +319,7 @@
     color: var(--ink-brown);
     font-weight: 600;
     letter-spacing: 0.01em;
-    font-size: clamp(7.5px, 1vh, 10.5px);
+    font-size: clamp(7.5px, 2.21cqw, 10.5px);
     line-height: 1.15;
     max-width: 100%;
   }
@@ -316,7 +327,7 @@
   .inv-closing {
     font-family: 'Great Vibes', cursive;
     color: var(--ink-rose);
-    font-size: clamp(14px, 1.95vh, 18px);
+    font-size: clamp(14px, 4.31cqw, 18px);
     line-height: 1;
   }
 
@@ -334,6 +345,42 @@
     letter-spacing: 0.08em;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
     pointer-events: none;
+  }
+
+  /* Short / landscape viewports (rotated phones, small browser windows):
+     shrink the card and tighten the UI below it so nothing overlaps. */
+  @media (max-height: 560px) {
+    .stage-column {
+      padding-top: 0.5vh;
+    }
+    .scroll-stage {
+      width: min(98vw, 76vh * 0.5628);
+    }
+    .cta-text {
+      margin-top: 0.6vh;
+      font-size: clamp(11px, 3vw, 14px);
+    }
+    .skip-btn {
+      bottom: 1.1vh;
+      padding: 0.4em 1em;
+      font-size: clamp(10px, 2.6vw, 13px);
+    }
+    .brand-footer {
+      bottom: 0.3vh;
+      font-size: clamp(7px, 2vw, 9px);
+    }
+    /* On very short viewports the card itself must shrink a lot to fit;
+       let the text scale fully with it instead of holding a legibility
+       floor, or it would overflow its band on the tiny card. */
+    .inv-name    { font-size: 7.3cqw; }
+    .inv-age     { font-size: 2.91cqw; }
+    .inv-eyebrow { font-size: 5.3cqw; }
+    .inv-message { font-size: 2.47cqw; }
+    .inv-datetime .big   { font-size: 3.53cqw; }
+    .inv-datetime .small { font-size: 2.21cqw; }
+    .inv-venue    { font-size: 2.32cqw; }
+    .inv-whatsapp { font-size: 2.21cqw; }
+    .inv-closing  { font-size: 4.31cqw; }
   }
 
   @media (prefers-reduced-motion: reduce) {
