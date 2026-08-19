@@ -220,6 +220,42 @@
     to { opacity: 1; }
   }
 
+  .music-toggle {
+    position: fixed;
+    top: 3vh;
+    right: 4vw;
+    z-index: 10;
+    width: 2.6em;
+    height: 2.6em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: var(--skip-bg);
+    backdrop-filter: blur(3px);
+    color: #fff;
+    font-size: clamp(14px, 3.4vw, 18px);
+    cursor: pointer;
+    opacity: 0;
+    animation: skipFadeIn 0.6s ease forwards;
+    animation-delay: 2.4s;
+    transition: opacity 0.4s ease, transform 0.15s ease, background 0.2s ease;
+  }
+
+  .music-toggle:hover {
+    background: rgba(255, 210, 225, 0.5);
+    transform: scale(1.06);
+  }
+
+  .music-toggle:active {
+    transform: scale(0.94);
+  }
+
+  .music-toggle.muted {
+    opacity: 0.55;
+  }
+
   /* ---- Invite text overlaid on the open scroll ---- */
 
   .invite-content {
@@ -365,6 +401,11 @@
       padding: 0.4em 1em;
       font-size: clamp(10px, 2.6vw, 13px);
     }
+    .music-toggle {
+      top: 1.4vh;
+      width: 2.2em;
+      height: 2.2em;
+    }
     .brand-footer {
       bottom: 0.3vh;
       font-size: clamp(7px, 2vw, 9px);
@@ -387,7 +428,8 @@
     #scroll-closed,
     .roll-shadow,
     .cta-text,
-    .skip-btn {
+    .skip-btn,
+    .music-toggle {
       animation: none !important;
     }
     * {
@@ -440,7 +482,11 @@
 
   <button class="skip-btn" id="skip-btn" type="button">Pular abertura</button>
 
+  <button class="music-toggle" id="music-toggle" type="button" aria-label="Ativar ou desativar a música">&#9835;</button>
+
   <div class="brand-footer">By Luiza</div>
+
+  <div id="yt-player-container" style="position:fixed; top:-9999px; left:-9999px; width:1px; height:1px; overflow:hidden;"></div>
 </div>
 
 <script>
@@ -540,4 +586,109 @@
   if (prefersReducedMotion) {
     openScrollInstant();
   }
+
+  // ---- Background music: "Deixa Brilhar" (The Glow) via YouTube ----
+  // Browsers block unmuted autoplay before any user gesture, so playback
+  // starts on the same click/tap that opens the invitation (or on the
+  // page's very first interaction, as a fallback for the reduced-motion
+  // path, where the scroll opens automatically without a click).
+  const YT_VIDEO_ID = 'jNnhNtwes0I';
+  const musicToggle = document.getElementById('music-toggle');
+
+  let ytPlayer = null;
+  let ytReady = false;
+  let musicStarted = false;
+  let musicPending = false;
+  let musicMuted = false;
+
+  window.onYouTubeIframeAPIReady = function () {
+    ytPlayer = new YT.Player('yt-player-container', {
+      videoId: YT_VIDEO_ID,
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        disablekb: 1,
+        fs: 0,
+        modestbranding: 1,
+        loop: 1,
+        playlist: YT_VIDEO_ID,
+        playsinline: 1,
+        origin: window.location.origin
+      },
+      events: {
+        onReady: function () {
+          ytReady = true;
+          ytPlayer.setVolume(70);
+          console.log('[music] player ready');
+          if (musicPending) startMusic();
+        },
+        onError: function (e) {
+          console.error('[music] YouTube player error, code:', e.data);
+        },
+        onStateChange: function (e) {
+          console.log('[music] state changed to', e.data);
+        }
+      }
+    });
+  };
+
+  const ytApiScript = document.createElement('script');
+  ytApiScript.src = 'https://www.youtube.com/iframe_api';
+  ytApiScript.onerror = function () {
+    console.error('[music] failed to load the YouTube iframe API script (network blocked?)');
+  };
+  document.head.appendChild(ytApiScript);
+
+  setTimeout(function () {
+    if (!ytReady) {
+      console.warn('[music] YouTube API still not ready after 6s — likely blocked by the network, an ad blocker, or the browser.');
+    }
+  }, 6000);
+
+  function startMusic() {
+    if (musicStarted) return;
+    if (!ytReady || !ytPlayer) {
+      musicPending = true;
+      console.log('[music] play requested before player was ready — will retry once ready');
+      return;
+    }
+    musicStarted = true;
+    console.log('[music] starting playback');
+    ytPlayer.playVideo();
+    musicToggle.classList.remove('muted');
+
+    // Some browsers ignore the very first playVideo() call right after the
+    // iframe finishes loading; if playback hasn't actually begun shortly
+    // after, try once more.
+    setTimeout(function () {
+      const state = ytPlayer.getPlayerState && ytPlayer.getPlayerState();
+      if (state !== 1 /* playing */ && state !== 3 /* buffering */) {
+        console.log('[music] retrying playVideo(), state was', state);
+        ytPlayer.playVideo();
+      }
+    }, 1200);
+  }
+
+  function firstInteractionMusicStart() {
+    startMusic();
+  }
+  document.addEventListener('click', firstInteractionMusicStart, { once: true, capture: true });
+  document.addEventListener('keydown', firstInteractionMusicStart, { once: true, capture: true });
+  document.addEventListener('touchstart', firstInteractionMusicStart, { once: true, capture: true });
+
+  musicToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!ytPlayer) return;
+    if (!musicStarted) {
+      startMusic();
+      return;
+    }
+    musicMuted = !musicMuted;
+    if (musicMuted) {
+      ytPlayer.mute();
+    } else {
+      ytPlayer.unMute();
+    }
+    musicToggle.classList.toggle('muted', musicMuted);
+  });
 </script>
