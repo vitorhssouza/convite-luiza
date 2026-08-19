@@ -1,3 +1,4 @@
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -486,7 +487,7 @@
 
   <div class="brand-footer">By Luiza</div>
 
-  <div id="yt-player-container" style="position:fixed; top:-9999px; left:-9999px; width:1px; height:1px; overflow:hidden;"></div>
+  <div id="yt-player-container" style="position:fixed; bottom:0; left:0; width:2px; height:2px; opacity:0.01; overflow:hidden; pointer-events:none;"></div>
 </div>
 
 <script>
@@ -588,45 +589,57 @@
   }
 
   // ---- Background music: "Deixa Brilhar" (The Glow) via YouTube ----
-  // Browsers block unmuted autoplay before any user gesture, so playback
-  // starts on the same click/tap that opens the invitation (or on the
-  // page's very first interaction, as a fallback for the reduced-motion
-  // path, where the scroll opens automatically without a click).
+  //
+  // Why muted-first: a click on the parent page does NOT reliably count as
+  // a "user gesture" inside the cross-origin YouTube iframe (the command
+  // only reaches it via postMessage), so browsers can silently refuse to
+  // start audible playback from a click handler alone. Muted autoplay is
+  // always allowed, though — so the player starts muted as soon as it's
+  // ready, and the click the user already makes to open the invitation
+  // just unmutes an already-playing video, which browsers reliably allow.
   const YT_VIDEO_ID = 'jNnhNtwes0I';
   const musicToggle = document.getElementById('music-toggle');
 
   let ytPlayer = null;
   let ytReady = false;
-  let musicStarted = false;
-  let musicPending = false;
-  let musicMuted = false;
+  let soundEnabled = false;
+  let soundRequested = false;
 
   window.onYouTubeIframeAPIReady = function () {
     ytPlayer = new YT.Player('yt-player-container', {
       videoId: YT_VIDEO_ID,
       playerVars: {
-        autoplay: 0,
+        autoplay: 1,
+        mute: 1,
         controls: 0,
         disablekb: 1,
         fs: 0,
         modestbranding: 1,
         loop: 1,
         playlist: YT_VIDEO_ID,
-        playsinline: 1,
-        origin: window.location.origin
+        playsinline: 1
       },
       events: {
         onReady: function () {
           ytReady = true;
           ytPlayer.setVolume(70);
-          console.log('[music] player ready');
-          if (musicPending) startMusic();
+          ytPlayer.mute();
+          ytPlayer.playVideo();
+          console.log('[music] player ready, playing muted');
+          if (soundRequested) enableSound();
         },
         onError: function (e) {
           console.error('[music] YouTube player error, code:', e.data);
         },
         onStateChange: function (e) {
           console.log('[music] state changed to', e.data);
+          // The app never intentionally pauses this player (the toggle only
+          // mutes/unmutes), so if it stops for any reason — the browser
+          // pausing muted background media, a hiccup switching bitrate when
+          // unmuting, etc. — just resume it.
+          if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.UNSTARTED) {
+            ytPlayer.playVideo();
+          }
         }
       }
     });
@@ -645,50 +658,42 @@
     }
   }, 6000);
 
-  function startMusic() {
-    if (musicStarted) return;
+  function enableSound() {
+    if (soundEnabled) return;
     if (!ytReady || !ytPlayer) {
-      musicPending = true;
-      console.log('[music] play requested before player was ready — will retry once ready');
+      soundRequested = true;
       return;
     }
-    musicStarted = true;
-    console.log('[music] starting playback');
-    ytPlayer.playVideo();
+    soundEnabled = true;
+    ytPlayer.unMute();
+    ytPlayer.setVolume(70);
+    if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
+      ytPlayer.playVideo();
+    }
     musicToggle.classList.remove('muted');
-
-    // Some browsers ignore the very first playVideo() call right after the
-    // iframe finishes loading; if playback hasn't actually begun shortly
-    // after, try once more.
-    setTimeout(function () {
-      const state = ytPlayer.getPlayerState && ytPlayer.getPlayerState();
-      if (state !== 1 /* playing */ && state !== 3 /* buffering */) {
-        console.log('[music] retrying playVideo(), state was', state);
-        ytPlayer.playVideo();
-      }
-    }, 1200);
+    console.log('[music] sound enabled');
   }
 
-  function firstInteractionMusicStart() {
-    startMusic();
+  function firstInteractionEnableSound() {
+    enableSound();
   }
-  document.addEventListener('click', firstInteractionMusicStart, { once: true, capture: true });
-  document.addEventListener('keydown', firstInteractionMusicStart, { once: true, capture: true });
-  document.addEventListener('touchstart', firstInteractionMusicStart, { once: true, capture: true });
+  document.addEventListener('click', firstInteractionEnableSound, { once: true, capture: true });
+  document.addEventListener('keydown', firstInteractionEnableSound, { once: true, capture: true });
+  document.addEventListener('touchstart', firstInteractionEnableSound, { once: true, capture: true });
 
   musicToggle.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!ytPlayer) return;
-    if (!musicStarted) {
-      startMusic();
+    if (!soundEnabled) {
+      enableSound();
       return;
     }
-    musicMuted = !musicMuted;
-    if (musicMuted) {
+    const nowMuted = !ytPlayer.isMuted();
+    if (nowMuted) {
       ytPlayer.mute();
     } else {
       ytPlayer.unMute();
     }
-    musicToggle.classList.toggle('muted', musicMuted);
+    musicToggle.classList.toggle('muted', nowMuted);
   });
 </script>
