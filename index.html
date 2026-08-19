@@ -523,6 +523,16 @@
 
         <div class="inv-closing" id="inv-closing"></div>
       </div>
+
+      <!-- Shares the .invite-content box (same position/size as the invite
+           text above) and the same #scroll-open parchment, already on
+           screen — so no second image ever needs to load. -->
+      <div class="invite-content" id="gift-content">
+        <div class="inv-eyebrow" id="gift-eyebrow"></div>
+        <div class="inv-name" id="gift-name"></div>
+        <div class="inv-venue" id="gift-categories"></div>
+        <div class="inv-closing" id="gift-closing"></div>
+      </div>
     </div>
 
     <div class="cta-text" id="cta-text">Clique para assistir uma convocação real</div>
@@ -557,6 +567,14 @@
     closing: 'Esperamos você!'
   };
 
+  // ---- Gift-suggestion page (shown automatically after the invite opens) ----
+  const GIFT_CONFIG = {
+    eyebrow: 'Sugestão de Presente',
+    name: 'Luiza',
+    categories: 'Roupinhas | Calçados',
+    closing: 'Também adoro brinquedos!'
+  };
+
   function fillText(id, text) {
     document.getElementById(id).textContent = text;
   }
@@ -573,6 +591,11 @@
   fillText('inv-whatsapp', 'Por gentileza, confirme a sua presença no WhatsApp: ' + CONFIG.whatsapp);
   fillText('inv-closing', CONFIG.closing);
 
+  fillText('gift-eyebrow', GIFT_CONFIG.eyebrow);
+  fillText('gift-name', GIFT_CONFIG.name);
+  fillText('gift-categories', GIFT_CONFIG.categories);
+  fillText('gift-closing', GIFT_CONFIG.closing);
+
   // Preserve the line break inside the venue block
   document.getElementById('inv-venue').innerHTML =
     CONFIG.venueName + ' - ' + CONFIG.venueAddress + '<br>' + CONFIG.city;
@@ -585,8 +608,56 @@
   const ctaText = document.getElementById('cta-text');
   const skipBtn = document.getElementById('skip-btn');
   const inviteContent = document.getElementById('invite-content');
+  const giftContent = document.getElementById('gift-content');
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  function waitForTransitionEnd(el, propertyName) {
+    return new Promise((resolve) => {
+      el.addEventListener('transitionend', function onEnd(e) {
+        if (propertyName && e.propertyName !== propertyName) return;
+        el.removeEventListener('transitionend', onEnd);
+        resolve();
+      });
+    });
+  }
+
+  // How long to hold on the fully-open invite, once its own opening
+  // animation has completely finished, before the gift-suggestion page
+  // starts entering.
+  const GIFT_PAGE_DELAY = 10000;
+
+  let giftShown = false;
+
+  // Runs once the invite has fully finished opening (video crossfade done,
+  // or the instant fallback). Never starts the 2s countdown before that —
+  // it only ever begins counting once this function is actually called.
+  async function showGiftPage() {
+    if (giftShown) return;
+    giftShown = true;
+
+    // This pause is reading time, not a motion effect, so it applies even
+    // under prefers-reduced-motion — only the crossfade below is skipped
+    // in that case, never the wait itself.
+    await delay(GIFT_PAGE_DELAY);
+
+    if (prefersReducedMotion) {
+      inviteContent.classList.remove('shown');
+      giftContent.classList.add('shown', 'instant');
+      return;
+    }
+
+    // Fade the invite text out, then — using the exact same entrance
+    // transition already defined on .invite-content/.shown — fade the
+    // gift text in on the same parchment, in the same spot.
+    const fadeOutDone = waitForTransitionEnd(inviteContent, 'opacity');
+    inviteContent.classList.remove('shown');
+    await fadeOutDone;
+
+    giftContent.classList.add('shown');
+  }
 
   // Three states: (1) closed scroll awaiting a click, (2) opening video
   // playing, (3) scroll fully open with the invite text. `opened` blocks
@@ -626,6 +697,13 @@
       videoAbertura.removeEventListener('transitionend', onFadeOutDone);
       videoAbertura.pause();
       videoAbertura.hidden = true;
+
+      // The invite's own opening animation (the video handoff) has now
+      // truly finished — this is the real trigger for the gift page's
+      // countdown, not the click. Undo the transition-free 'instant'
+      // snap so the invite text can fade out normally afterwards.
+      inviteContent.classList.remove('instant');
+      showGiftPage();
     });
   }
 
@@ -654,6 +732,9 @@
     videoAbertura.classList.remove('active');
     videoAbertura.pause();
     videoAbertura.hidden = true;
+
+    inviteContent.classList.remove('instant');
+    showGiftPage();
   }
 
   function openScroll() {
