@@ -5,6 +5,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
 <link rel="preload" href="assets/abertura_pergaminho.mp4" as="video" type="video/mp4">
 <link rel="preload" href="assets/musica_convite.mp3" as="audio" type="audio/mpeg">
+<link rel="preload" href="assets/vestido.png" as="image">
+<link rel="preload" href="assets/sapato.png" as="image">
 <title>Convocação Real</title>
 
 <style>
@@ -399,6 +401,110 @@
     line-height: 1;
   }
 
+  /* ---- Gift-suggestion page, overlaid on the same open scroll ---- */
+
+  .gift-content {
+    position: absolute;
+    left: 16%;
+    right: 16%;
+    top: 29%;
+    bottom: 16%;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.8cqw;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+  }
+
+  .gift-content.shown {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .gift-content.instant {
+    transition: none;
+  }
+
+  .gift-eyebrow {
+    font-family: 'Great Vibes', cursive;
+    color: var(--ink-rose);
+    font-size: clamp(16px, 5.3cqw, 23px);
+    line-height: 1;
+  }
+
+  .gift-name {
+    font-family: 'Great Vibes', cursive;
+    color: var(--ink-rose);
+    font-size: clamp(21px, 7.3cqw, 31.5px);
+    line-height: 1;
+  }
+
+  .gift-columns {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: 4cqw;
+  }
+
+  .gift-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4cqw;
+  }
+
+  .gift-crown {
+    font-size: clamp(10px, 3.6cqw, 15px);
+    line-height: 1;
+  }
+
+  .gift-col-title {
+    color: var(--ink-brown);
+    font-weight: 700;
+    font-size: clamp(9.5px, 3.1cqw, 13px);
+    letter-spacing: 0.02em;
+  }
+
+  .gift-col-size {
+    color: var(--ink-brown);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: clamp(7px, 2.1cqw, 9.5px);
+  }
+
+  /* Two classes to out-specify ".scroll-stage img" (position:absolute;
+     inset:0; width/height:100%), which otherwise stretches this image
+     to fill the whole .gift-content box instead of sitting sized and
+     in-flow inside its own .gift-column. */
+  .gift-content .gift-item-image {
+    position: static;
+    width: 78%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+    margin-top: 0.3cqw;
+    filter: drop-shadow(0 3px 5px rgba(90, 58, 30, 0.28));
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .gift-closing {
+    font-family: 'Great Vibes', cursive;
+    color: var(--ink-rose);
+    font-size: clamp(14px, 4.31cqw, 18px);
+    line-height: 1.15;
+  }
+
   .brand-footer {
     position: fixed;
     left: 0;
@@ -454,6 +560,12 @@
     .inv-venue    { font-size: 2.32cqw; }
     .inv-whatsapp { font-size: 2.21cqw; }
     .inv-closing  { font-size: 4.31cqw; }
+    .gift-eyebrow   { font-size: 5.3cqw; }
+    .gift-name      { font-size: 7.3cqw; }
+    .gift-crown     { font-size: 3.6cqw; }
+    .gift-col-title { font-size: 3.1cqw; }
+    .gift-col-size  { font-size: 2.1cqw; }
+    .gift-closing   { font-size: 4.31cqw; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -525,14 +637,30 @@
         <div class="inv-closing" id="inv-closing"></div>
       </div>
 
-      <!-- Shares the .invite-content box (same position/size as the invite
-           text above) and the same #scroll-open parchment, already on
-           screen — so no second image ever needs to load. -->
-      <div class="invite-content" id="gift-content">
-        <div class="inv-eyebrow" id="gift-eyebrow"></div>
-        <div class="inv-name" id="gift-name"></div>
-        <div class="inv-venue" id="gift-categories"></div>
-        <div class="inv-closing" id="gift-closing"></div>
+      <!-- Overlaid on the same #scroll-open parchment as the invite text
+           above — no second scroll image ever needs to load. -->
+      <div class="gift-content" id="gift-content">
+        <div class="gift-eyebrow" id="gift-eyebrow"></div>
+        <div class="gift-name" id="gift-name"></div>
+
+        <div class="gift-columns">
+          <div class="gift-column">
+            <div class="gift-crown" aria-hidden="true">&#128081;</div>
+            <div class="gift-col-title" id="gift-col1-title"></div>
+            <div class="gift-col-size" id="gift-col1-size"></div>
+            <img class="gift-item-image" src="assets/vestido.png" alt="Vestido rosa infantil">
+          </div>
+
+          <div class="gift-column">
+            <div class="gift-crown" aria-hidden="true">&#128081;</div>
+            <div class="gift-col-title" id="gift-col2-title"></div>
+            <div class="gift-col-size" id="gift-col2-size"></div>
+            <img class="gift-item-image" src="assets/sapato.png" alt="Sapatinhos rosa infantis">
+          </div>
+        </div>
+
+        <div class="gift-crown" aria-hidden="true">&#128081;</div>
+        <div class="gift-closing" id="gift-closing"></div>
       </div>
     </div>
 
@@ -572,8 +700,11 @@
   const GIFT_CONFIG = {
     eyebrow: 'Sugestão de Presente',
     name: 'Luiza',
-    categories: 'Roupinhas | Calçados',
-    closing: 'Também adoro brinquedos!'
+    col1Title: 'Roupinhas',
+    col1Size: 'tam 18 a 24 meses',
+    col2Title: 'Calçados',
+    col2Size: 'tam 20/21',
+    closing: 'Também adoro\nbrinquedos!'
   };
 
   function fillText(id, text) {
@@ -594,8 +725,14 @@
 
   fillText('gift-eyebrow', GIFT_CONFIG.eyebrow);
   fillText('gift-name', GIFT_CONFIG.name);
-  fillText('gift-categories', GIFT_CONFIG.categories);
-  fillText('gift-closing', GIFT_CONFIG.closing);
+  fillText('gift-col1-title', GIFT_CONFIG.col1Title);
+  fillText('gift-col1-size', GIFT_CONFIG.col1Size);
+  fillText('gift-col2-title', GIFT_CONFIG.col2Title);
+  fillText('gift-col2-size', GIFT_CONFIG.col2Size);
+
+  // Preserve the line break in the closing line
+  document.getElementById('gift-closing').innerHTML =
+    GIFT_CONFIG.closing.replace('\n', '<br>');
 
   // Preserve the line break inside the venue block
   document.getElementById('inv-venue').innerHTML =
