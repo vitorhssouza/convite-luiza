@@ -744,6 +744,14 @@
     ctaText.classList.add('hidden');
     skipBtn.classList.add('hidden');
 
+    // Start the background music from this exact click too — the same
+    // proven-reliable gesture that plays the video's own audio. Mobile
+    // browsers (Safari in particular) only grant audible autoplay to a
+    // narrow set of trusted events, and 'touchstart' — used below as an
+    // earlier, best-effort trigger — isn't reliably one of them, so this
+    // click is the real guarantee, not just a backup.
+    startMusic();
+
     // Ask the video to play right away, from the same synchronous click
     // handler, so the user gesture carries through to audio playback.
     // The closed scroll stays put until we actually get a frame back
@@ -853,9 +861,12 @@
     console.warn('[music] failed to load the audio file');
   });
 
+  // 'touchend' (a completed tap), not 'touchstart' (which can still turn
+  // into a scroll/swipe) — Safari in particular doesn't reliably treat a
+  // bare touchstart as a gesture that's allowed to start audible media.
   document.addEventListener('click', startMusic, { once: true, capture: true });
   document.addEventListener('keydown', startMusic, { once: true, capture: true });
-  document.addEventListener('touchstart', startMusic, { once: true, capture: true });
+  document.addEventListener('touchend', startMusic, { once: true, capture: true });
 
   musicToggle.addEventListener('click', (e) => {
     e.stopPropagation();
